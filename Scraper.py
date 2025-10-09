@@ -13,12 +13,12 @@ def scrape_game_list():
     scraped_games = []
     driver = None
     
+def scrape_game_list():
+    # ...
     print("Initializing browser...")
     try:
         options = uc.ChromeOptions()
-        # You can add --headless here if you want, but xvfb makes it unnecessary
-        # options.add_argument('--headless')
-        driver = uc.Chrome(options=options)
+        driver = uc.Chrome(options=options, version_main=140)
         
         print(f"Navigating to {url_to_scrape}...")
         driver.get(url_to_scrape)

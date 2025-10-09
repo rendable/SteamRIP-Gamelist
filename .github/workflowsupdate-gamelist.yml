@@ -1,35 +1,45 @@
 name: Auto-Update Game List
 
+# This 'on' block defines when the action will run.
 on:
+  # This allows you to run the job manually from the Actions tab.
+  # The empty {} is important for it to be recognized correctly.
+  workflow_dispatch: {}
+
+  # This runs the job on a schedule. This example runs at 00:00 and 12:00 UTC every day.
   schedule:
     - cron: '0 0,12 * * *'
-  workflow_dispatch:
 
 jobs:
   scrape-and-commit:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Check out the repository's code
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Step 2: Set up the Python environment
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-    
+      # Step 3: Install Google Chrome browser onto the runner
       - name: Install Google Chrome
         uses: browser-actions/setup-chrome@v1
 
+      # Step 4: Install the required Python libraries
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # Step 5: Execute the scraper script
       - name: Run the scraper
         run: python scraper.py
 
+      # Step 6: Commit the updated file back to the repository if it changed
       - name: Commit and push if changed
         uses: stefanzweifel/git-auto-commit-action@v5
         with:

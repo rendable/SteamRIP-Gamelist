@@ -1,4 +1,5 @@
 import json
+import os # Import the 'os' module to read environment variables
 from datetime import datetime
 import undetected_chromedriver as uc
 from bs4 import BeautifulSoup
@@ -10,9 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 def scrape_game_list():
     """Scrapes the main game list from SteamRIP and returns a list of game dictionaries."""
     
-    # FIX #1: The URL definition was missing. It is now added back.
     url_to_scrape = "https://steamrip.com/games-list-page/"
-    
     scraped_games = []
     driver = None
     
@@ -20,8 +19,20 @@ def scrape_game_list():
     try:
         options = uc.ChromeOptions()
         
-        # FIX #2: Changed version_main from 140 to 143 to match the new browser on the runner.
-        driver = uc.Chrome(options=options, version_main=143)
+        # --- THE DEFINITIVE FIX ---
+        # 1. Get the path to the browser executable installed by the workflow
+        browser_path = os.environ.get("CHROME_PATH")
+        print(f"Detected CHROME_PATH: {browser_path}")
+
+        if not browser_path:
+            raise ValueError("CHROME_PATH environment variable not set. Cannot find browser.")
+
+        # 2. Pass the exact browser path and the matching version to the driver
+        driver = uc.Chrome(
+            browser_executable_path=browser_path, 
+            version_main=143,
+            options=options
+        )
         
         print(f"Navigating to {url_to_scrape}...")
         driver.get(url_to_scrape)
@@ -50,12 +61,11 @@ def scrape_game_list():
         print("\nParsing complete.")
         return scraped_games
 
-    except TimeoutException:
-        print("Error: Timed out waiting for the game list page to load.")
-        return []
     except Exception as e:
         print(f"An unexpected error occurred during scraping: {e}")
-        return []
+        # Re-raising the error will cause the workflow to fail, which is better for debugging
+        raise
+
     finally:
         if driver:
             print("Closing browser.")
@@ -63,8 +73,13 @@ def scrape_game_list():
 
 def main():
     """Main function to run the scraper and save the results."""
-    scraped_games = scrape_game_list()
-    
+    try:
+        scraped_games = scrape_game_list()
+    except Exception as e:
+        print(f"Scraper failed with an unhandled exception: {e}")
+        # Force the script to exit with a non-zero code to make the workflow step fail
+        exit(1)
+
     if not scraped_games:
         print("No games were scraped. Exiting without updating files.")
         return

@@ -37,7 +37,7 @@ jobs:
 
       # 6. Runs the scraper inside the virtual screen
       - name: Run Python Scraper
-        run: xvfb-run python scraper.py
+        run: xvfb-run python Scraper.py
 
       # 7. Commits the updated JSON files back to the repository if they have changed
       - name: Commit and push if changed

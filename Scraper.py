@@ -9,16 +9,19 @@ from selenium.webdriver.support import expected_conditions as EC
 
 def scrape_game_list():
     """Scrapes the main game list from SteamRIP and returns a list of game dictionaries."""
+    
+    # FIX #1: The URL definition was missing. It is now added back.
     url_to_scrape = "https://steamrip.com/games-list-page/"
+    
     scraped_games = []
     driver = None
     
-def scrape_game_list():
-    # ...
     print("Initializing browser...")
     try:
         options = uc.ChromeOptions()
-        driver = uc.Chrome(options=options, version_main=140)
+        
+        # FIX #2: Changed version_main from 140 to 143 to match the new browser on the runner.
+        driver = uc.Chrome(options=options, version_main=143)
         
         print(f"Navigating to {url_to_scrape}...")
         driver.get(url_to_scrape)
@@ -43,8 +46,6 @@ def scrape_game_list():
             game_name = link_tag.get_text(strip=True)
             full_url = f"https://steamrip.com{relative_url}"
             scraped_games.append({"name": game_name, "url": full_url, "download_links": {}})
-            # Optional: Print progress to the console
-            # print(f"\rParsed game {index + 1}/{total_games}...", end="")
 
         print("\nParsing complete.")
         return scraped_games
@@ -70,14 +71,11 @@ def main():
 
     print(f"Successfully scraped {len(scraped_games)} games. Sorting and saving...")
     
-    # Sort games alphabetically
     scraped_games.sort(key=lambda x: x['name'])
     
-    # Save the main game list
     with open("links_reformatted.json", 'w', encoding='utf8') as f:
         json.dump(scraped_games, f, indent=4)
         
-    # Save the update timestamp
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
     with open("update_info.json", "w") as f:
         json.dump({"last_update": timestamp}, f)

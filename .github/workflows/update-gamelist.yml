@@ -1,12 +1,10 @@
 name: Auto-Update Game List
 
-# This 'on' block defines when the action will run.
 on:
-  # This allows you to run the job manually from the Actions tab.
-  # The empty {} is important for it to be recognized correctly.
-  workflow_dispatch: {}
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
-  # This runs the job on a schedule. This example runs at 00:00 and 12:00 UTC every day.
+  # Runs the workflow automatically every 12 hours (at 00:00 and 12:00 UTC)
   schedule:
     - cron: '0 0,12 * * *'
 
@@ -15,39 +13,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the repository's code
+      # 1. Checks out your repository's code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up the Python environment
+      # 2. Sets up the Python environment
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # Step 3: Install Google Chrome browser onto the runner
+      # 3. Installs Google Chrome
       - name: Install Google Chrome
         uses: browser-actions/setup-chrome@v1
-        with:
-          version: 'stable'
 
-      # NEW STEP: Install the virtual screen environment
+      # 4. Installs a virtual screen (important for undetected-chromedriver)
       - name: Install Xvfb (Virtual Screen)
         run: sudo apt-get update && sudo apt-get install -y xvfb
 
-      # Step 4: Install the required Python libraries
+      # 5. Installs the required Python libraries
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
-      # Step 5: Execute the scraper script inside the virtual screen
-      - name: Run the scraper
-        run: xvfb-run python Scraper.py # MODIFIED: Added 'xvfb-run' prefix
+      # 6. Runs the scraper inside the virtual screen
+      - name: Run Python Scraper
+        run: xvfb-run python scraper.py
 
-      # Step 6: Commit the updated file back to the repository if it changed
+      # 7. Commits the updated JSON files back to the repository if they have changed
       - name: Commit and push if changed
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Automated: Updated game list"
-          file_pattern: "links_reformatted.json"
+          # Tell the action to look for changes in both files
+          file_pattern: "links_reformatted.json update_info.json"

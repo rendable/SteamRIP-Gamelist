@@ -1,3 +1,4 @@
 undetected-chromedriver
 selenium
+chromedriver-py==140.0.7339.207
 beautifulsoup4

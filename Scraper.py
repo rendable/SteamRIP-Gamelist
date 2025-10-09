@@ -1,74 +1,88 @@
-# Scraper.py
-
-import time
 import json
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
+from datetime import datetime
+import undetected_chromedriver as uc
+from bs4 import BeautifulSoup
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
-import chromedriver_py # This is the package we installed
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-def run_scraper():
-    print("Initializing browser for scraping...")
-
-    # --- WebDriver Setup ---
-    # This is the new, required setup to make Selenium use the driver we manually installed.
-    service = Service(executable_path=chromedriver_py.binary_path)
-
-    # These options are crucial for running in a GitHub Action (a "headless" environment)
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("window-size=1920,1080") # Set a reasonable window size
-
-    # Initialize the driver using both the service and the options
-    driver = webdriver.Chrome(service=service, options=options)
-
+def scrape_game_list():
+    """Scrapes the main game list from SteamRIP and returns a list of game dictionaries."""
+    url_to_scrape = "https://steamrip.com/games-list-page/"
+    scraped_games = []
+    driver = None
+    
+    print("Initializing browser...")
     try:
-        # --- YOUR SCRAPING LOGIC GOES HERE ---
-        # This is an example. Replace it with your actual scraping code.
+        options = uc.ChromeOptions()
+        # You can add --headless here if you want, but xvfb makes it unnecessary
+        # options.add_argument('--headless')
+        driver = uc.Chrome(options=options)
         
-        print("Navigating to the target URL...")
-        driver.get("https://steamrip.com/") # Example URL
-
-        # Wait for the page to load (a simple sleep is okay for demonstration)
-        time.sleep(5)
-
-        print("Extracting data...")
-        # Example: Find all game links on the homepage
-        game_elements = driver.find_elements(By.CSS_SELECTOR, "a.card-post")
+        print(f"Navigating to {url_to_scrape}...")
+        driver.get(url_to_scrape)
         
-        scraped_data = []
-        for element in game_elements:
-            title = element.get_attribute("title")
-            link = element.get_attribute("href")
-            if title and link:
-                scraped_data.append({"title": title, "link": link})
-
-        if not scraped_data:
-            raise Exception("No data was scraped. The website structure may have changed.")
-
-        print(f"Successfully scraped {len(scraped_data)} items.")
-
-        # --- SAVING THE FILE ---
-        # This is an example of how to save the data to a JSON file.
-        output_filename = "links_reformatted.json" # Make sure this matches your workflow's commit step
-        with open(output_filename, 'w') as f:
-            json.dump(scraped_data, f, indent=4)
+        print("Waiting for page content to load (max 60 seconds)...")
+        wait = WebDriverWait(driver, 60)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.az-link-posts-block")))
         
-        print(f"Data successfully saved to {output_filename}")
+        print("Page loaded. Parsing game links...")
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        game_links = soup.select("div.az-list-container li a")
+        
+        if not game_links:
+            print("Error: Found the main container, but no game links were inside.")
+            return []
+            
+        total_games = len(game_links)
+        print(f"Found {total_games} games. Extracting details...")
+        
+        for index, link_tag in enumerate(game_links):
+            relative_url = link_tag['href']
+            game_name = link_tag.get_text(strip=True)
+            full_url = f"https://steamrip.com{relative_url}"
+            scraped_games.append({"name": game_name, "url": full_url, "download_links": {}})
+            # Optional: Print progress to the console
+            # print(f"\rParsed game {index + 1}/{total_games}...", end="")
 
+        print("\nParsing complete.")
+        return scraped_games
 
+    except TimeoutException:
+        print("Error: Timed out waiting for the game list page to load.")
+        return []
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        # Re-raise the exception to make the GitHub Action fail as expected
-        raise
-
+        print(f"An unexpected error occurred during scraping: {e}")
+        return []
     finally:
-        # --- IMPORTANT: Clean up the browser session ---
-        # This ensures the browser closes properly, even if an error occurs.
-        print("Closing the browser.")
-        driver.quit()
+        if driver:
+            print("Closing browser.")
+            driver.quit()
+
+def main():
+    """Main function to run the scraper and save the results."""
+    scraped_games = scrape_game_list()
+    
+    if not scraped_games:
+        print("No games were scraped. Exiting without updating files.")
+        return
+
+    print(f"Successfully scraped {len(scraped_games)} games. Sorting and saving...")
+    
+    # Sort games alphabetically
+    scraped_games.sort(key=lambda x: x['name'])
+    
+    # Save the main game list
+    with open("links_reformatted.json", 'w', encoding='utf8') as f:
+        json.dump(scraped_games, f, indent=4)
+        
+    # Save the update timestamp
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+    with open("update_info.json", "w") as f:
+        json.dump({"last_update": timestamp}, f)
+        
+    print("Files 'links_reformatted.json' and 'update_info.json' have been updated.")
 
 if __name__ == "__main__":
-    run_scraper()
+    main()

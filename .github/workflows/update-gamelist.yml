@@ -31,15 +31,19 @@ jobs:
         with:
           version: 'stable'
 
+      # NEW STEP: Install the virtual screen environment
+      - name: Install Xvfb (Virtual Screen)
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       # Step 4: Install the required Python libraries
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Step 5: Execute the scraper script
+      # Step 5: Execute the scraper script inside the virtual screen
       - name: Run the scraper
-        run: python Scraper.py
+        run: xvfb-run python Scraper.py # MODIFIED: Added 'xvfb-run' prefix
 
       # Step 6: Commit the updated file back to the repository if it changed
       - name: Commit and push if changed

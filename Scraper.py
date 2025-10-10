@@ -19,7 +19,7 @@ def scrape_games():
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         
-        driver = uc.Chrome(options=options, version_main=123)
+        driver = uc.Chrome(options=options)
         
         print(f"Navigating to {url_to_scrape}...")
         driver.get(url_to_scrape)

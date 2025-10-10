@@ -31,6 +31,7 @@ jobs:
       - name: Run the scraper
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          CHROME_VERSION: ${{ steps.setup-chrome.outputs.chrome-version }}
         run: xvfb-run python Scraper.py
 
       - name: Commit and push if changed

@@ -21,10 +21,10 @@ jobs:
       - name: Install Google Chrome
         id: setup-chrome
         uses: browser-actions/setup-chrome@v1
-
+        
       - name: Install ChromeDriver
         id: setup-chromedriver
-        uses: browser-actions/setup-chromedriver@v1
+        uses: nanasess/setup-chromedriver@v2
 
       - name: Install dependencies
         run: |

@@ -16,21 +16,26 @@ def scrape_games():
 
     try:
         options = uc.ChromeOptions()
-        
-        # --- THE DEFINITIVE FIX ---
-        # The '--headless' argument has been removed.
-        # We will let xvfb in the workflow file handle making the browser invisible.
-        # This allows the browser to run in its normal, undetectable mode.
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         
-        driver = uc.Chrome(options=options)
+        # --- THE DEFINITIVE FIX ---
+        # 1. Read the exact browser version passed in from the workflow
+        browser_version_str = os.environ.get("CHROME_VERSION")
+        if not browser_version_str:
+            raise ValueError("CHROME_VERSION environment variable not set.")
+            
+        # 2. Extract the major version number (e.g., 140 from "140.0.7339.0")
+        major_version = int(browser_version_str.split('.')[0])
+        print(f"Detected Chrome major version: {major_version}")
+
+        # 3. Pass this exact version to undetected-chromedriver
+        driver = uc.Chrome(options=options, version_main=major_version)
         
         print(f"Navigating to {url_to_scrape}...")
         driver.get(url_to_scrape)
         
         print("Waiting for Cloudflare and page content (max 120 seconds)...")
-        # Use a generous timeout for the cloud environment
         wait = WebDriverWait(driver, 120) 
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.az-link-posts-block")))
         
@@ -56,7 +61,6 @@ def scrape_games():
 
     except Exception as e:
         print(f"An unexpected error occurred during scraping: {e}")
-        # Re-raising the error will cause the workflow to fail, which is better for debugging
         raise
 
     finally:
@@ -70,7 +74,6 @@ if __name__ == "__main__":
         games = scrape_games()
     except Exception as e:
         print(f"Scraper failed with an unhandled exception: {e}")
-        # Force the script to exit with a non-zero code to make the workflow step fail
         exit(1)
 
     if games is not None:

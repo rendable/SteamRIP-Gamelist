@@ -21,7 +21,7 @@ jobs:
       - name: Install Google Chrome
         id: setup-chrome
         uses: browser-actions/setup-chrome@v1
-        
+
       - name: Install ChromeDriver
         id: setup-chromedriver
         uses: nanasess/setup-chromedriver@v2
@@ -34,7 +34,7 @@ jobs:
       - name: Run the scraper
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-          CHROMEDRIVER_PATH: ${{ steps.setup-chromedriver.outputs.chromedriver-path }}
+          CHROMEDRIVER_PATH: ${{ steps.setup-chromedriver.outputs.chromedriver }}
         run: xvfb-run python Scraper.py
 
       - name: Commit and push if changed

@@ -19,7 +19,20 @@ def scrape_games():
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         
-        driver = uc.Chrome(options=options)
+        browser_path = os.environ.get("CHROME_PATH")
+        driver_path = os.environ.get("CHROMEDRIVER_PATH")
+        
+        print(f"Using Browser Path: {browser_path}")
+        print(f"Using Driver Path: {driver_path}")
+
+        if not browser_path or not driver_path:
+            raise ValueError("CHROME_PATH or CHROMEDRIVER_PATH environment variables not set.")
+
+        driver = uc.Chrome(
+            options=options,
+            browser_executable_path=browser_path,
+            driver_executable_path=driver_path
+        )
         
         print(f"Navigating to {url_to_scrape}...")
         driver.get(url_to_scrape)

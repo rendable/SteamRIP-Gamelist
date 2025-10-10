@@ -81,4 +81,4 @@ if __name__ == "__main__":
         print("Successfully saved game list to links_reformatted.json.")
     else:
         print("Scraping failed or returned no games. No file was written.")
-        exit(1)```
+        exit(1)

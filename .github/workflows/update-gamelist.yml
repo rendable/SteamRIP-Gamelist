@@ -18,9 +18,11 @@ jobs:
         with:
           python-version: '3.11'
 
+      
       - name: Install Google Chrome
-        id: setup-chrome
         uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: '123'
 
       - name: Install dependencies
         run: |
@@ -29,9 +31,6 @@ jobs:
 
       
       - name: Run the scraper
-        env:
-          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-          CHROME_VERSION: ${{ steps.setup-chrome.outputs.chrome-version }}
         run: xvfb-run python Scraper.py
 
       - name: Commit and push if changed

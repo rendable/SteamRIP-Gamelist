@@ -19,18 +19,7 @@ def scrape_games():
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         
-        # --- THE DEFINITIVE FIX ---
-        # 1. Read the exact browser version passed in from the workflow
-        browser_version_str = os.environ.get("CHROME_VERSION")
-        if not browser_version_str:
-            raise ValueError("CHROME_VERSION environment variable not set.")
-            
-        # 2. Extract the major version number (e.g., 140 from "140.0.7339.0")
-        major_version = int(browser_version_str.split('.')[0])
-        print(f"Detected Chrome major version: {major_version}")
-
-        # 3. Pass this exact version to undetected-chromedriver
-        driver = uc.Chrome(options=options, version_main=major_version)
+        driver = uc.Chrome(options=options, version_main=123)
         
         print(f"Navigating to {url_to_scrape}...")
         driver.get(url_to_scrape)

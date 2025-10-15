@@ -1,89 +1,70 @@
-import json
-import os
-import undetected_chromedriver as uc
-from bs4 import BeautifulSoup
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+# File: Scraper.py (Proxy-less Version)
 
-def scrape_games():
-    """Scrapes the game list and returns it as a list of dicts."""
-    url_to_scrape = "https://steamrip.com/games-list-page/"
-    scraped_games = []
-    driver = None
+import time
+import random
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
+from webdriver_manager.chrome import ChromeDriverManager
+
+options = webdriver.ChromeOptions()
+
+options.add_argument("--start-maximized")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-blink-features=AutomationControlled")
+
+options.add_experimental_option("excludeSwitches", ["enable-automation"])
+options.add_experimental_option('useAutomationExtension', False)
+
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+options.add_argument(f'user-agent={user_agent}')
+
+
+driver = None
+try:
     print("Initializing browser for scraping...")
 
-    try:
-        options = uc.ChromeOptions()
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
+    service = ChromeService(executable_path=ChromeDriverManager().install())
+    
+    driver = webdriver.Chrome(service=service, options=options)
+    
+    print("Browser initialized successfully.")
+    
+    target_url = "https://steamrip.com/games-list-page/"
+    print(f"Navigating to {target_url}...")
+    driver.get(target_url)
+
+    print("Performing human-like actions...")
+    time.sleep(random.uniform(4.1, 7.3))
+
+    scroll_height = driver.execute_script("return document.body.scrollHeight")
+    if scroll_height > 0:
+        random_scroll_amount = random.randint(int(scroll_height * 0.2), int(scroll_height * 0.5))
+        driver.execute_script(f"window.scrollTo(0, {random_scroll_amount});")
+        print(f"Scrolled down by {random_scroll_amount} pixels.")
+        time.sleep(random.uniform(2.5, 4.8))
+
+    print("Scraping logic starting...")
+    page_title = driver.title
+    print(f"Successfully loaded page. Title: '{page_title}'")
+    
+    if "Cloudflare" in page_title or "Just a moment..." in page_title or "Access denied" in page_title:
+        print("\nWARNING: Page title suggests we may have been blocked by Cloudflare.")
         
-        browser_path = os.environ.get("CHROME_PATH")
-        driver_path = os.environ.get("CHROMEDRIVER_PATH")
-        
-        print(f"Using Browser Path: {browser_path}")
-        print(f"Using Driver Path: {driver_path}")
+    screenshot_file = "final_page_screenshot.png"
+    driver.save_screenshot(screenshot_file)
+    print(f"Screenshot saved to '{screenshot_file}'.")
 
-        if not browser_path or not driver_path:
-            raise ValueError("CHROME_PATH or CHROMEDRIVER_PATH environment variables not set.")
+except Exception as e:
+    print(f"\nAn unexpected error occurred during scraping: {e}")
+    if driver:
+        driver.save_screenshot("error_screenshot.png")
+        print("Error screenshot saved.")
+    exit(1)
 
-        driver = uc.Chrome(
-            options=options,
-            browser_executable_path=browser_path,
-            driver_executable_path=driver_path
-        )
-        
-        print(f"Navigating to {url_to_scrape}...")
-        driver.get(url_to_scrape)
-        
-        print("Waiting for Cloudflare and page content (max 120 seconds)...")
-        wait = WebDriverWait(driver, 120) 
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.az-link-posts-block")))
-        
-        print("Page loaded. Parsing game list...")
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
-        game_links = soup.select("div.az-list-container li a")
-        
-        if not game_links:
-            print("Error: Found the container, but no game links were inside.")
-            return None
-
-        total_games = len(game_links)
-        print(f"Found {total_games} games. Extracting data...")
-
-        for link_tag in game_links:
-            relative_url = link_tag['href']
-            full_url = f"https://steamrip.com{relative_url}"
-            game_name = link_tag.get_text(strip=True)
-            scraped_games.append({"name": game_name, "url": full_url, "download_links": {}})
-        
-        print("Data extraction complete.")
-        return scraped_games
-
-    except Exception as e:
-        print(f"An unexpected error occurred during scraping: {e}")
-        raise
-
-    finally:
-        if driver:
-            print("Closing browser.")
-            driver.quit()
-
-if __name__ == "__main__":
-    games = None
-    try:
-        games = scrape_games()
-    except Exception as e:
-        print(f"Scraper failed with an unhandled exception: {e}")
-        exit(1)
-
-    if games is not None:
-        print(f"Successfully scraped {len(games)} games. Sorting and saving...")
-        games.sort(key=lambda x: x['name'])
-        with open("links_reformatted.json", "w", encoding="utf8") as f:
-            json.dump(games, f, indent=4)
-        print("Successfully saved game list to links_reformatted.json.")
-    else:
-        print("Scraping failed or returned no games. No file was written.")
-        exit(1)
+finally:
+    if driver:
+        print("Closing browser.")
+        driver.quit()
